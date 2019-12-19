@@ -1,0 +1,277 @@
+---
+title: "AT Summary Analysis & Content Description"
+author: "Hunter Stanke"
+date: "12/19/2019"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+The `AT_Summary.zip` file contains all code and data used in our 2019 analysis of the status and trends in forest attributes along the Appalachian National Scenic Trail and surrounding lands. This document is intended to provide a brief description of our analyses, and description of contents of `AT_Summary.zip`. Contact Hunter Stanke at stankehu@msu.edu with questions. 
+
+### Analysis Description
+We used the `rFIA` package to estimate all forest attributes described below (see `atAnnual.R` for code). We accessed subsets of the public Forest Inventory and Analysis database on 10 October 2019 for the following states: CT, GA, ME, MD, MA, NH, NJ, NY, NC, PA, TN, VT, and VA. 
+
+The FIA program conducts annual (panel) inventories within each state. For our study region, this is most often a series of 5 annual, spatially unbiased inventories within each sampling cycle. This panel structure allows the FIA program to improve the precision of status and change estimates by leveraging previously collected data within an inventory cycle (e.g., estimate for 2015 may include data from annual inventories conducted from 2010-2015). There are many methods available for combining annual panels using alternative weighting schemes, and we have implemented a few in our recent updates to `rFIA`. 
+
+We produced summaries of the attributes below using 3 unique estimators (methods for panel combination):
+
+* __Temporally Indifferent__ : The temporally indifferent method assumes that all annual panels within an inventory cycle were collected simultaneously in the reporting year. This is the flagship method used by the FIA program, seen tools like `EVALIDator`, though it introduces temporal lag bias and smoothing that limits its utility for change detection.
+
+* __Annual__ : The annual method returns estimates produced directly from annual panels (no panel combination). Thus only data that is measured in a given year is used to produce estimates for that year. This method will produce estimates with higher variance (loss of precision) as we forgo the opportunity to leverage previous information (increase sample size), although it may be the best option for assessing inter-annual variation and temporal trends. NOTE: This estimator may produce estimates with temporally cyclical structure becuase of repeat observations of individual annual panels between inventory cycles. For example if plots are measured on 5 year cycles beginning in 2005, the same plots measured in 2005 will be remeasured in 2010, 2015, 2020 and onward. Hence, corresponding annual panel estimates are likely to be similar to one another, potentially producing results with some odd temporal structure. 
+
+* __Exponential Moving Average__ : The exponential moving average method falls in the middle ground between the temorally indifferent and annual estimators, leveraging all annual panels within an inventory cycle to produce estimates, although weighting recent panels higher than less recent panels. The relative weights applied to each panel declines exponentially as a function of time since measurement, but we can control the rate of this decay with a parameter called `lambda` (ranges form 0-1).  Low lambda values will place higher weight on more recent observations, so as lambda approaches 0, the exponential moving average will approach the annual method for panel combination. For this analysis we used the defualt value of 0.94. 
+
+We produced estimates for all FIA reporting years which were available in each state. Some states have different reporting schedules, and thus there is some missingness in the data. We estimate the following attributes within ecoregion subsections which intersect the AT:
+
+1. **Live tree abundance**
+    + TPA, BAA, biomass, and carbon by species
+2. **Species diversity of live trees**
+    + Shannon's diversity, eveness, and richness
+3. **Tree vital rates**
+    + Annual diameter, basal area, and biomass growth by species
+4. **Forest demographic rates**
+    + Annual recruitment, mortality, and harvest totals and rates by species
+5. **Regeneration abundance**
+    + TPA of regenerating stems (<5" DBH) by species and size-class
+6. **Snag abundance**
+    + TPA, BAA, biomass, carbon, relative fraction
+7. **Down woody debris abundance**
+    + Volume, biomass, and carbon by fuel class
+8. **Invasive Plant abundance**
+    + % cover by species
+9. **Stand structural stage distributions**
+    + % area in pole, mature, and late stage forest
+  
+
+FIA data was not available for each ecoregion subsection defined by the `ecoregion/at_ecoSub.shp` shapefile. Attributes of ecoregions where FIA data was unavailable were preserved in results files (see `results/`) although estimated attributes are listed as `NA` for these rows. 
+
+
+<br>
+
+### File structure
+
+* **atAnnual.R**: R script containing `rFIA` code required to download FIA Data and produce population estimates describing the status and trends in forest attributes along the AT.
+
+<br>
+
+* **ecoregions/**
+  + *at_ecoSub.shp*: Includes polygons for ecological sections and subsections within Subregions within the conterminous United States clipped to the HUC10 shell surrounding the Appalachian National Scenic Trail. This data set contains regional geographic delineations for analysis of ecological relationships across ecological units. 
+  
+<br>
+
+* **FIA/**
+  + *Empty on download*: This folder is empty upon download, but will be populated with FIA data upon sourcing `at_script.R`. FIA data for the following states will be downloaded and saved as `.csv` files: CT, GA, ME, MD, MA, NH, NJ, NY, NC, PA, TN, VT, and VA.
+
+<br>
+
+* **ti/ and ema/ amd annual/**
+  + _**bio.csv**_: Estimates of live tree (DBH >= 12.7 cm) biomass, volume, and carbon on a per forested acre basis 
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *NETVOL_ACRE*: estimate of live tree net volume (cu.ft.) per acre
+    + *SAWVOL_ACRE*: estimate of live tree merchantable saw volume (cu.ft.) per acre
+    + *BIO_AG_ACRE*: estimate of live tree aboveground biomass (tons) per acre
+    + *BIO_BG_ACRE*: estimate of live tree belowground biomass (tons) per acre
+    + *BIO_ACRE*: estimate of live tree total (AG + BG) biomass (tons) per acre
+    + *CARB_AG_ACRE*: estimate of live tree aboveground carbon (tons) per acre
+    + *CARB_BG_ACRE*: estimate of live tree belowground carbon (tons) per acre
+    + *CARB_ACRE*: estimate of live tree total (AG + BG) carbon (tons) per acre
+    + *nPlots_VOL*: number of non-zero plots used to compute volume, biomass, and carbon estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**bioS.csv**_: Estimates of live tree biomass (DBH >= 12.7 cm), volume, and carbon on a per forested acre basis *grouped by species*
+    + Same as `bio.csv`, with following additional columns relating to species codes and names: *SPCD*, *SCIENTIFIC_NAME*, *COMMON_NAME*
+  
+  + _**div.csv**_: Estimates of species diversity indicies for live trees (DBH >= 12.7 cm) at alpha, beta, and gamma levels
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *H_a*: estimate of Shannon's Diversity Index for live trees at the alpha (stand) level
+    + *H_b*: estimate of Shannon's Diversity Index for live trees at the beta (landscape) level
+    + *H_g*: estimate of Shannon's Diversity Index for live trees at the gamma (regional) level    
+    + *H_a*: estimate of Shannon's Equitability Index for live trees at the alpha (stand) level
+    + *H_b*: estimate of Shannon's Equitability Index for live trees at the beta (landscape) level
+    + *H_g*: estimate of Shannon's Equitability Index for live trees at the gamma (regional) level  
+    + *S_a*: estimates of species richness for live trees at the alpha (stand) level
+    + *S_b*: estimates of species richness for live trees at the beta (landscape) level
+    + *S_g*: estimates of species richness for live trees at the gamma (regional) level 
+    + *nStands*: number of non-zero stands (conditions) used to compute alpha-level diversity estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+
+  + _**dw.csv**_: Estimates of down woody material volume, biomass, and carbon by fuel type on a per forested acre basis
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *VOL_DUFF_ACRE*: Not available for this region
+    + *VOL_LITTER_ACRE*: Not available for this region
+    + *VOL_1HR_ACRE*: estimate of 1 HR (small fine woody debris) volume (cu.ft.) per forested acre
+    + *VOL_10HR_ACRE*: estimate of 10 HR (medium fine woody debris) volume (cu.ft.) per forested acre
+    + *VOL_100HR_ACRE*: estimate of 100 HR (large fine woody debris) volume (cu.ft.) per forested acre
+    + *VOL_1000HR_ACRE*: estimate of 1000 HR (coarse woody debris) volume (cu.ft.) per forested acre
+    + *VOL_PILE_ACRE*: estimate of slash pile volume (cu.ft.) per forested acre
+    + *VOL_ACRE*: estimate of total down woody debris (duff + litter + 1HR + 10HR + 100HR + 1000HR + pile) volume (cu.ft.) per forested acre
+    + *BIO_DUFF_ACRE*: estimate of duff biomass (tons) per forested acre
+    + *BIO_LITTER_ACRE*: estimate of litter biomass (tons) per forested acre
+    + *BIO_1HR_ACRE*: estimate of 1 HR (small fine woody debris) biomass (tons) per forested acre
+    + *BIO_10HR_ACRE*: estimate of 10 HR (medium fine woody debris) biomass (tons) per forested acre
+    + *BIO_100HR_ACRE*: estimate of 100 HR (large fine woody debris) biomass (tons) per forested acre
+    + *BIO_1000HR_ACRE*: estimate of 1000 HR (coarse woody debris) biomass (tons) per forested acre
+    + *BIO_PILE_ACRE*: estimate of slash pile biomass (tons) per forested acre
+    + *BIO_ACRE*: estimate of total down woody debris (duff + litter + 1HR + 10HR + 100HR + 1000HR + pile) biomass (tons) per forested acre
+    + *CARB_DUFF_ACRE*: estimate of duff carbon (tons) per forested acre
+    + *CARB_LITTER_ACRE*: estimate of litter carbon (tons) per forested acre
+    + *CARB_1HR_ACRE*: estimate of 1 HR (small fine woody debris) carbon (tons) per forested acre
+    + *CARB_10HR_ACRE*: estimate of 10 HR (medium fine woody debris) carbon (tons) per forested acre
+    + *CARB_100HR_ACRE*: estimate of 100 HR (large fine woody debris) carbon (tons) per forested acre
+    + *CARB_1000HR_ACRE*: estimate of 1000 HR (coarse woody debris) carbon (tons) per forested acre
+    + *CARB_PILE_ACRE*: estimate of slash pile carbon (tons) per forested acre
+    + *CARB_ACRE*: estimate of total down woody debris (duff + litter + 1HR + 10HR + 100HR + 1000HR + pile) carbon (tons) per forested acre
+    + *nPlots*: number of non-zero plots used to compute down woody material abundance and area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**gm.csv**_: Estimates of annual tree (DBH >= 12.7 cm) recruitment, mortality, and harvest rates per forested acre and relative to population totals (e.g. % mortality / year)
+    + *YEAR*: FIA reporting year for growth, removal, and mortality estimates
+    + *RECR_TPA*: estimate of annual recruitment (growth beyond 12.7 cm DBH) as trees per forested acre
+    + *MORT_TPA*: estimate of annual mortality (excluding harvest and conversion) as trees per forested acre
+    + *REMV_TPA*: estimate of annual removals (harvest and conversion) as trees per forested acre
+    + *RECR_PERC*: estimate of annual recruitment rate, as % of individuals recruiting relative to total population
+    + *MORT_PERC*: estimate of annual mortality rate, as % of individuals subject to mortality relative to total population
+    + *REMV_PERC*: estimate of annual removal rate, as % of individuals subject to removal relative to total population
+    + *nPlots_TREE*: number of non-zero plots used to compute total tree estimates
+    + *nPlots_RECR*: number of non-zero plots used to compute recruitment estimates  
+    + *nPlots_MORT*: number of non-zero plots used to compute mortality estimates    
+    + *nPlots_REMV*: number of non-zero plots used to compute removal estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**gmS.csv**_: Estimates of annual tree (DBH >= 12.7 cm) recruitment, mortality, and harvest rates per forested acre and relative to population totals *grouped by species*
+    + Same as `gm.csv`, with following additional columns relating to species codes and names: *SPCD*, *SCIENTIFIC_NAME*, *COMMON_NAME*
+  
+  + _**inv.csv**_: Estimates of areal coverage by invasive plant species relative to forested land area
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *SYMBOL*: unique species ID from NRCS Plant Reference Guide
+    + *SCIENTIFIC_NAME*: latin name of the species
+    + *COMMON_NAME*: commmon name of the species
+    + *COVER_PCT*: estimate of percent areal coverage with respect to total forested land area
+    + *nPlots_INV*: number of non-zero plots used to compute species coverage estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+  
+  + _**regen.csv**_: Estimates of live sapling (2.5 cm <= DBH < 12.7 cm) abundance (TPA & BAA) per forested acre 
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *TPA*: estimate of saplings per acre
+    + *BAA*: estimate of sapling basal area (sq.ft.) per acre
+    + *TPA_PERC*: estimate of proportion of saplings which are live, with respect to TPA
+    + *BAA_PERC*: estimate of proportion of saplings which are live, with respect to BAA
+    + *nPlots_TREE*: number of non-zero plots used to compute tree and basal area estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**regenS.csv**_: Estimates of live sapling (2.5 cm <= DBH < 12.7 cm) abundance (TPA & BAA) per forested acre *grouped by species*
+    + Same as `regen.csv`, with following additional columns relating to species codes and names: *SPCD*, *SCIENTIFIC_NAME*, *COMMON_NAME*
+
+  + _**snag.csv**_: Estimates of standing dead tree (DBH >= 12.7 cm) abundance (TPA & BAA) per forested acre and relative to population totals (e.g. percent snags by TPA)
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *TPA*: estimate of snags per acre
+    + *BAA*: estimate of snags basal area (sq.ft.) per acre
+    + *TPA_PERC*: estimate of proportion of snags relative to all stems (live and dead), with respect to TPA
+    + *BAA_PERC*: estimate of proportion of snags relative to all stems (live and dead), with respect to BAA
+    + *nPlots_TREE*: number of non-zero plots used to compute tree and basal area estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**snagLD.csv**_: Estimates of *large diameter* standing dead tree (DBH >= 30 cm) abundance (TPA & BAA) per forested acre and relative to population totals (e.g. percent snags by TPA)
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *TPA*: estimate of large snags per acre
+    + *BAA*: estimate of large snags basal area (sq.ft.) per acre
+    + *TPA_PERC*: estimate of proportion of large snags relative to all stems (live and dead), with respect to TPA
+    + *BAA_PERC*: estimate of proportion of large snags relative to all stems (live and dead), with respect to BAA
+    + *nPlots_TREE*: number of non-zero plots used to compute tree and basal area estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**snagV.csv**_: Estimates of standing dead tree (DBH >= 12.7 cm) biomass, volume, and carbon on a per forested acre basis 
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *NETVOL_ACRE*: estimate of snag net volume (cu.ft.) per acre
+    + *SAWVOL_ACRE*: estimate of snag merchantable saw volume (cu.ft.) per acre
+    + *BIO_AG_ACRE*: estimate of snag aboveground biomass (tons) per acre
+    + *BIO_BG_ACRE*: estimate of snag belowground biomass (tons) per acre
+    + *BIO_ACRE*: estimate of snag total (AG + BG) biomass (tons) per acre
+    + *CARB_AG_ACRE*: estimate of snag aboveground carbon (tons) per acre
+    + *CARB_BG_ACRE*: estimate of snag belowground carbon (tons) per acre
+    + *CARB_ACRE*: estimate of snag total (AG + BG) carbon (tons) per acre
+    + *nPlots_VOL*: number of non-zero plots used to compute volume, biomass, and carbon estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**snagVLD.csv**_: Estimates of *large diameter* standing dead tree (DBH >= 30 cm) biomass, volume, and carbon on a per forested acre basis 
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *NETVOL_ACRE*: estimate of large diameter snag net volume (cu.ft.) per acre
+    + *SAWVOL_ACRE*: estimate of large diameter snag merchantable saw volume (cu.ft.) per acre
+    + *BIO_AG_ACRE*: estimate of large diameter snag aboveground biomass (tons) per acre
+    + *BIO_BG_ACRE*: estimate of large diameter snag belowground biomass (tons) per acre
+    + *BIO_ACRE*: estimate of large diameter snag total (AG + BG) biomass (tons) per acre
+    + *CARB_AG_ACRE*: estimate of large diameter snag aboveground carbon (tons) per acre
+    + *CARB_BG_ACRE*: estimate of large diameter snag belowground carbon (tons) per acre
+    + *CARB_ACRE*: estimate of large diameter snag total (AG + BG) carbon (tons) per acre
+    + *nPlots_VOL*: number of non-zero plots used to compute volume, biomass, and carbon estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**ss.csv**_: Estimates of forest structural stage distributions as percent forested land area in pole, mature, late, and mosaic stages
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *POLE_PERC*: estimate of proportion forested area in pole stage forest
+    + *MATURE_PERC*: estimate of proportion forested area in mature stage forest
+    + *LATE_PERC*: estimate of proportion forested area in late-seral stage forest
+    + *MOSAIC_PERC*: estimate of proportion forested area in mosaic stage (unclassified) forest
+    + *nPlots*: number of non-zero plots used to compute current area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**tpa.csv**_: Estimates of live tree (DBH >= 12.7 cm) abundance (TPA & BAA) per forested acre 
+    + *YEAR*: FIA reporting year for current abundance estimates
+    + *TPA*: estimate of trees per acre
+    + *BAA*: estimate of tree basal area (sq.ft.) per acre
+    + *TPA_PERC*: estimate of proportion of trees which are live, with respect to TPA
+    + *BAA_PERC*: estimate of proportion of trees which are live, with respect to BAA
+    + *nPlots_TREE*: number of non-zero plots used to compute tree and basal area estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+    
+  + _**tpaS.csv**_: Estimates of live tree (DBH >= 12.7 cm) abundance (TPA & BAA) per forested acre *grouped by species*
+    + Same as `tpa.csv`, with following additional columns relating to species codes and names: *SPCD*, *SCIENTIFIC_NAME*, *COMMON_NAME*
+
+  + _**vr.csv**_: Estimates of (1) individual live tree (DBH >= 12.7 cm) diameter, basal area, net volume, and biomass growth rates, and (2) basal area, net volume, and biomass growth rates expressed on a per forested acre basis
+    + *YEAR*: FIA reporting year for growth, removal, and mortality estimates
+    + *DIA_GROW*: estimate of annual diameter growth (inches) rate for live trees (individual growth)
+    + *BA_GROW*: estimate of annual basal area growth (sq.ft.) rate for live trees (individual growth)
+    + *NETVOL_GROW*: estimate of annual net volume growth (cu.ft.) rate for live trees (individual growth)
+    + *BIO_GROW*: estimate of annual biomass growth (tons) rate for live trees (individual growth)
+    + *BAA_GROW*: estimate of annual basal area growth (sq.ft.) per forested acre (stand-level growth)
+    + *NETVOL_GROW_AC*: estimate of annual net volume growth (cu.ft.) per forested acre (stand-level growth)
+    + *BIO_GROW_AC*: estimate of annual biomass growth (tons) per forested acre (stand-level growth)
+    + *nPlots_TREE*: number of non-zero plots used to compute tree estimates
+    + *nPlots_AREA*: number of non-zero plots used to compute land area estimates
+    + columns ending in *SE*: estimates of sampling error (%) of the respective variable. All sampling error estimates are computed with 68% confidence
+    + other columns from `ecoregions/at_ecoSub.shp`
+  
+  
+  + _**vrS.csv**_: Estimates of (1) individual live tree (DBH >= 12.7 cm) diameter, basal area, net volume, and biomass growth rates, and (2) basal area, net volume, and biomass growth rates expressed on a per forested acre basis *grouped by species*
+    + Same as `vr.csv`, with following additional columns relating to species codes and names: *SPCD*, *SCIENTIFIC_NAME*, *COMMON_NAME*
+
+  
+  
+
+  
+  
+  

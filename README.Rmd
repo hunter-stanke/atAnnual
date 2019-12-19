@@ -9,7 +9,7 @@ output: github_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-The `AT_Summary.zip` file contains all code and data used in our 2019 analysis of the status and trends in forest attributes along the Appalachian National Scenic Trail and surrounding lands. This document is intended to provide a brief description of our analyses, and description of contents of `AT_Summary.zip`. Contact Hunter Stanke at stankehu@msu.edu with questions. 
+This repository contains all code and data used in our 2019 analysis of the status and trends in forest attributes along the Appalachian National Scenic Trail and surrounding lands. This document is intended to provide a brief description of our analyses, and description of contents of the repository. Contact Hunter Stanke at stankehu@msu.edu with questions. 
 
 ### Analysis Description
 We used the `rFIA` package to estimate all forest attributes described below (see `atAnnual.R` for code). We accessed subsets of the public Forest Inventory and Analysis database on 10 October 2019 for the following states: CT, GA, ME, MD, MA, NH, NJ, NY, NC, PA, TN, VT, and VA. 

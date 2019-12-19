@@ -3,12 +3,12 @@ AT Summary Analysis & Content Description
 Hunter Stanke
 12/19/2019
 
-The `AT_Summary.zip` file contains all code and data used in our 2019
-analysis of the status and trends in forest attributes along the
-Appalachian National Scenic Trail and surrounding lands. This document
-is intended to provide a brief description of our analyses, and
-description of contents of `AT_Summary.zip`. Contact Hunter Stanke at
-<stankehu@msu.edu> with questions.
+This repository contains all code and data used in our 2019 analysis of
+the status and trends in forest attributes along the Appalachian
+National Scenic Trail and surrounding lands. This document is intended
+to provide a brief description of our analyses, and description of
+contents of the repository. Contact Hunter Stanke at <stankehu@msu.edu>
+with questions.
 
 ### Analysis Description
 

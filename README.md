@@ -64,7 +64,7 @@ We produced summaries of the attributes below using 3 unique estimators
     place higher weight on more recent observations, so as lambda
     approaches 0, the exponential moving average will approach the
     annual method for panel combination. For this analysis we used the
-    defualt value of 0.94.
+    defualt value of 0.50.
 
 We produced estimates for all FIA reporting years which were available
 in each state. Some states have different reporting schedules, and thus
